@@ -1,0 +1,63 @@
+{{ $releaseName := .Release.Name }}
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ $releaseName }}
+  labels:
+    app: {{ $releaseName }}
+spec:
+  
+  {{- range $service, $val := .Values.services }}
+  {{- range $labelKey, $labelVal := $val.labels }}
+  {{- if eq $labelKey "helm.docker-compose.replicas" }}
+  replicas: {{ $labelVal }}
+  {{- end}}
+  {{- end}}
+  {{- end}}   
+  selector:
+    matchLabels:
+      app: {{ $releaseName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $releaseName }}
+    spec:
+      {{- range $service, $val := .Values.services }}
+      {{- range $labelKey, $labelVal := $val.labels }}
+      {{- if eq $labelKey "helm.docker-compose.imagePullSecret" }}
+      imagePullSecrets:
+      - name: {{ $labelVal }}
+      {{- end}}
+      {{- end}}
+      {{- end}}      
+      containers:
+      {{- range $service, $val := .Values.services }}      
+      - name: {{ $service }}
+        image: {{ $val.image }}
+        imagePullPolicy: IfNotPresent
+        env:
+        {{- range $key, $value := $val.environment }}
+        - name: {{ $key }}
+          value: "{{ $value }}"
+        {{-  end }}          
+        ports:
+        {{- range $k, $v := $val.ports }}
+          - containerPort: {{ splitList ":" $v | last }}
+        {{- end }}
+        {{- range $key, $value := $val.labels }}
+        {{- if eq $key "helm.docker-compose.healthcheck" }}
+        livenessProbe:
+          httpGet:
+            path: {{ $value }}
+          {{- range $k, $v := $val.ports }}
+            port: {{ splitList ":" $v | last }}
+          {{- end }}            
+        readinessProbe:
+          httpGet:
+            path: {{ $value }}
+          {{- range $k, $v := $val.ports }}
+            port: {{ splitList ":" $v | last }}
+          {{- end }}            
+        {{- end}}
+      {{end}}
+{{end}}        

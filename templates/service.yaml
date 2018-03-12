@@ -1,0 +1,19 @@
+{{ $releaseName := .Release.Name }}
+{{ range $service, $val := .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $releaseName }}
+  labels:
+    app: {{ $releaseName }}
+spec:
+  type: NodePort
+  ports:
+  {{- range $k, $v := $val.ports }}
+  - name: "{{ splitList ":" $v | first }}"
+    port: {{ splitList ":" $v | first }}
+    targetPort: {{ splitList ":" $v | last }}
+  {{- end }}  
+  selector:
+    app: {{ $releaseName }}
+{{ end }}
