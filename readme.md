@@ -24,6 +24,6 @@ services:
 ```
 
 ```
-helm repo add turner http://dev.helm.turnerlabs.io.s3-website-us-east-1.amazonaws.com/
+helm repo add turner http://dev.helm.turnerlabs.io
 helm install turner/docker-compose -f docker-compose.yml --name my-web-app
 ```
